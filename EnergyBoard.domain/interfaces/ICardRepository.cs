@@ -5,12 +5,10 @@ namespace EnergyBoard.Domain.interfaces;
 
 public interface ICardRepository
 {
-    Task<IEnumerable<Card>> GetAllAsync();
-    Task<Card?> GetByIdAsync(int id);
+    Task<Card?> GetByIdAsync(int projectId, int columnId, int cardId, Guid userId);
+    Task<List<Card>> GetAllAsync(int projectId, int columnId, Guid userId);
     Task AddAsync(Card card);
     Task UpdateAsync(Card card);
-    Task DeleteAsync(Card card);
     Task UpdateRangeAsync(IEnumerable<Card> cards);
-    Task<int> GetNextPositionAsync();
-    Task<IEnumerable<Card>> GetCardsByColumnIdAsync(int columnId);
+    Task<int> GetNextPositionAsync(int projectId, int columnId, Guid userId);
 }

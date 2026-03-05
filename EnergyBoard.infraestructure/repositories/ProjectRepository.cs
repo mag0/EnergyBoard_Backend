@@ -16,24 +16,28 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Project project)
-    {
-        await UpdateAsync(project);
-    }
-
-    public async Task<IEnumerable<Project>> GetAllAsync()
-    {
-        return await _context.Projects.OrderBy(p => p.Position).ToListAsync();
-    }
-
-    public async Task<Project?> GetByIdAsync(int id)
-    {
-        return await _context.Projects.FirstOrDefaultAsync(p => p.Id == id);
-    }
-
-    public async Task<Project?> GetProjectCompleteAsync(int id)
+    public async Task<IEnumerable<Project>> GetAllAsync(Guid userId)
     {
         return await _context.Projects
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .OrderBy(p => p.Position)
+            .ToListAsync();
+    }
+
+    public async Task<Project?> GetByIdAsync(int id, Guid userId)
+    {
+        return await _context.Projects
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<Project?> GetCompleteProjectAsync(int id, Guid userId)
+    {
+        return await _context.Projects
+            .AsNoTracking()
+            .Where(p => p.UserId == userId)
             .Include(p => p.Columns)
             .ThenInclude(c => c.Cards)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -51,11 +55,4 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<int> GetNextPositionAsync()
-    {
-        if (!await _context.Projects.AnyAsync())
-            return 1;
-
-        return await _context.Projects.MaxAsync(p => p.Position) + 1;
-    }
 }

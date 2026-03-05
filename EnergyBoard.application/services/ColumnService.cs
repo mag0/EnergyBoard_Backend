@@ -1,54 +1,70 @@
 ﻿
 using AutoMapper;
-using EnergyBoard.Application.DTOs.request;
+using EnergyBoard.Application.DTOs.request.columns;
+using EnergyBoard.Application.DTOs.response.columns;
+using EnergyBoard.Application.interfaces;
 using EnergyBoard.Domain.entities;
 using EnergyBoard.Domain.interfaces;
 
 namespace EnergyBoard.Application.services;
 
-public class ColumnService (IColumnRepository columnRepository, IMapper mapper)
+public class ColumnService (IColumnRepository columnRepository, IMapper mapper) : IColumnService
 {
     private readonly IColumnRepository _columnRepository = columnRepository;
     private readonly IMapper _mapper = mapper;
 
-    public async Task AddColumnAsync(CreateColumnRequest createColumnRequest)
+    public async Task<int> AddAsync(int projectId, CreateColumnRequest request, Guid userId)
     {
-        var nextPosition = await _columnRepository.GetNextPositionAsync();
+        var nextPosition = await _columnRepository.GetNextPositionAsync(projectId, userId);
 
-        var column = _mapper.Map<Column>(createColumnRequest);
-
+        var column = _mapper.Map<Column>(request);
+        column.ProjectId = projectId;
         column.Position = nextPosition;
         column.CreatedAt = DateTime.UtcNow;
 
         await _columnRepository.AddAsync(column);
+
+        return column.Id;
     }
 
-    public async Task UpdateColumnAsync(int id, UpdateColumnRequest updateColumn)
+    public async Task<IEnumerable<ColumnResponse>> GetAllAsync(int projectId, Guid userId)
     {
-        var column = await GetExistingColumn(id);
+        var columns = await _columnRepository.GetAllAsync(projectId, userId);
+        return _mapper.Map<IEnumerable<ColumnResponse>>(columns);
+    }
+
+    public async Task<ColumnResponse> GetByIdAsync(int projectId, int columnId, Guid userId)
+    {
+        var column = await _columnRepository.GetByIdAsync(projectId, columnId,  userId)
+            ?? throw new KeyNotFoundException("Column not found");
+        return _mapper.Map<ColumnResponse>(column);
+    }
+
+    public async Task UpdateAsync(int projectId, int columnId, UpdateColumnRequest request, Guid userId)
+    {
+        var column = await GetEntityAsync(projectId, columnId, userId);
         
-        if(updateColumn.Title != null)
-        {
-            column.Title = updateColumn.Title;
-        }
-        if(updateColumn.Description != null)
-        {
-            column.Description = updateColumn.Description;
-        }
+        column.Title = request.Title ?? column.Title;
+        column.Description = request.Description ?? column.Description;
+        column.UpdatedAt = DateTime.UtcNow;
+
         await _columnRepository.UpdateAsync(column);
     }
 
-    public async Task DeleteColumnAsync(int id)
+    public async Task DeleteAsync(int projectId, int columnId, Guid userId)
     {
-        var column = await GetExistingColumn(id);
-        await _columnRepository.DeleteAsync(column);
+        var column = await GetEntityAsync(projectId, columnId, userId);
+        column.IsDeleted = true;
+        column.UpdatedAt = DateTime.UtcNow;
+
+        await _columnRepository.UpdateAsync(column);
     }
 
-    public async Task UpdateProjectPositionAsync(int id, MoveColumnRequest request)
+    public async Task UpdatePositionAsync(int projectId, int columnId, MoveColumnRequest request, Guid userId)
     {
-        var columns = (await _columnRepository.GetAllAsync()).ToList();
+        var columns = await _columnRepository.GetAllAsync(projectId, userId);
 
-        var columnToMove = columns.FirstOrDefault(p => p.Id == id)
+        var columnToMove = columns.FirstOrDefault(c => c.Id == columnId)
             ?? throw new KeyNotFoundException("Column not found");
 
         columns.Remove(columnToMove);
@@ -71,10 +87,9 @@ public class ColumnService (IColumnRepository columnRepository, IMapper mapper)
         await _columnRepository.UpdateRangeAsync(columns);
     }
 
-    private async Task<Column> GetExistingColumn(int id)
+    private async Task<Column> GetEntityAsync(int projectId, int columnId, Guid userId)
     {
-        var column = await _columnRepository.GetByIdAsync(id)
+        return await _columnRepository.GetByIdAsync(projectId, columnId, userId)
             ?? throw new KeyNotFoundException("Column not found");
-        return column;
     }
 }

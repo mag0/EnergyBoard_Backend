@@ -20,17 +20,17 @@
           }
         }
       },
-      "AutoMapper.Extensions.Microsoft.DependencyInjection/12.0.0": {
+      "BCrypt.Net-Next/4.1.0": {
         "type": "package",
-        "dependencies": {
-          "AutoMapper": "12.0.0",
-          "Microsoft.Extensions.Options": "6.0.0"
-        },
         "compile": {
-          "lib/netstandard2.1/AutoMapper.Extensions.Microsoft.DependencyInjection.dll": {}
+          "lib/netstandard2.1/BCrypt.Net-Next.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/netstandard2.1/AutoMapper.Extensions.Microsoft.DependencyInjection.dll": {}
+          "lib/netstandard2.1/BCrypt.Net-Next.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.0": {
@@ -220,18 +220,33 @@
         "lib/netstandard2.0/AutoMapper.xml"
       ]
     },
-    "AutoMapper.Extensions.Microsoft.DependencyInjection/12.0.0": {
-      "sha512": "XCJ4E3oKrbRl1qY9Mr+7uyC0xZj1+bqQjmQRWTiTKiVuuXTny+7YFWHi20tPjwkMukLbicN6yGlDy5PZ4wyi1w==",
+    "BCrypt.Net-Next/4.1.0": {
+      "sha512": "5YT3DKllmtkyW68PjURu/V1TOe4MKiByKwsRNVcfYE1S5KuFTeozdmKzyNzolKiQF391OXCaQtINvYT3j1ERzQ==",
       "type": "package",
-      "path": "automapper.extensions.microsoft.dependencyinjection/12.0.0",
+      "path": "bcrypt.net-next/4.1.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "README.md",
-        "automapper.extensions.microsoft.dependencyinjection.12.0.0.nupkg.sha512",
-        "automapper.extensions.microsoft.dependencyinjection.nuspec",
-        "icon.png",
-        "lib/netstandard2.1/AutoMapper.Extensions.Microsoft.DependencyInjection.dll"
+        "bcrypt.net-next.4.1.0.nupkg.sha512",
+        "bcrypt.net-next.nuspec",
+        "ico.png",
+        "lib/net10.0/BCrypt.Net-Next.dll",
+        "lib/net10.0/BCrypt.Net-Next.xml",
+        "lib/net20/BCrypt.Net-Next.dll",
+        "lib/net20/BCrypt.Net-Next.xml",
+        "lib/net35/BCrypt.Net-Next.dll",
+        "lib/net35/BCrypt.Net-Next.xml",
+        "lib/net462/BCrypt.Net-Next.dll",
+        "lib/net462/BCrypt.Net-Next.xml",
+        "lib/net472/BCrypt.Net-Next.dll",
+        "lib/net472/BCrypt.Net-Next.xml",
+        "lib/net48/BCrypt.Net-Next.dll",
+        "lib/net48/BCrypt.Net-Next.xml",
+        "lib/netstandard2.0/BCrypt.Net-Next.dll",
+        "lib/netstandard2.0/BCrypt.Net-Next.xml",
+        "lib/netstandard2.1/BCrypt.Net-Next.dll",
+        "lib/netstandard2.1/BCrypt.Net-Next.xml",
+        "readme.md"
       ]
     },
     "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.0": {
@@ -545,7 +560,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "AutoMapper >= 16.1.0",
-      "AutoMapper.Extensions.Microsoft.DependencyInjection >= 12.0.0",
+      "BCrypt.Net-Next >= 4.1.0",
       "EnergyBoard.Domain >= 1.0.0"
     ]
   },
@@ -556,11 +571,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\guerr\\source\\repos\\EnergyBoard\\EnergyBoard.application\\EnergyBoard.Application.csproj",
+      "projectUniqueName": "C:\\Users\\guerr\\source\\repos\\mag0\\EnergyBoard_Backend\\EnergyBoard.application\\EnergyBoard.Application.csproj",
       "projectName": "EnergyBoard.Application",
-      "projectPath": "C:\\Users\\guerr\\source\\repos\\EnergyBoard\\EnergyBoard.application\\EnergyBoard.Application.csproj",
+      "projectPath": "C:\\Users\\guerr\\source\\repos\\mag0\\EnergyBoard_Backend\\EnergyBoard.application\\EnergyBoard.Application.csproj",
       "packagesPath": "C:\\Users\\guerr\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\guerr\\source\\repos\\EnergyBoard\\EnergyBoard.application\\obj\\",
+      "outputPath": "C:\\Users\\guerr\\source\\repos\\mag0\\EnergyBoard_Backend\\EnergyBoard.application\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -581,8 +596,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\guerr\\source\\repos\\EnergyBoard\\EnergyBoard.domain\\EnergyBoard.Domain.csproj": {
-              "projectPath": "C:\\Users\\guerr\\source\\repos\\EnergyBoard\\EnergyBoard.domain\\EnergyBoard.Domain.csproj"
+            "C:\\Users\\guerr\\source\\repos\\mag0\\EnergyBoard_Backend\\EnergyBoard.domain\\EnergyBoard.Domain.csproj": {
+              "projectPath": "C:\\Users\\guerr\\source\\repos\\mag0\\EnergyBoard_Backend\\EnergyBoard.domain\\EnergyBoard.Domain.csproj"
             }
           }
         }
@@ -607,9 +622,9 @@
             "target": "Package",
             "version": "[16.1.0, )"
           },
-          "AutoMapper.Extensions.Microsoft.DependencyInjection": {
+          "BCrypt.Net-Next": {
             "target": "Package",
-            "version": "[12.0.0, )"
+            "version": "[4.1.0, )"
           }
         },
         "imports": [
@@ -628,7 +643,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.311/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

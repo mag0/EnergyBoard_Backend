@@ -1,0 +1,27 @@
+version: '3.9'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: energyboard_db
+    environment:
+      SA_PASSWORD: "TuPassword123!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  api:
+    build: .
+    container_name: energyboard_api
+    depends_on:
+      - db
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=EnergyBoardDb;User Id=sa;Password=TuPassword123!;"
+      Jwt__Key: "ESTA_ES_UNA_CLAVE_SUPER_SECRETA_LARGA_123456"
+    ports:
+      - "80:80"
+
+volumes:
+  sql_data:

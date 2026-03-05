@@ -11,10 +11,18 @@ public class AppDbContext : DbContext
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Column> Columns => Set<Column>();
     public DbSet<Card> Cards => Set<Card>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<User>()
+            .HasQueryFilter(u => !u.IsDeleted)
+            .HasMany(u => u.Projects)
+            .WithOne(p => p.User)
+            .HasForeignKey(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Project>()
             .HasQueryFilter(p => !p.IsDeleted)

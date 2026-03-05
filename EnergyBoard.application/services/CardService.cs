@@ -1,115 +1,123 @@
 ﻿
 using AutoMapper;
-using EnergyBoard.Application.DTOs.request;
-using EnergyBoard.Application.DTOs.response;
+using EnergyBoard.Application.DTOs.request.cards;
+using EnergyBoard.Application.DTOs.response.cards;
+using EnergyBoard.Application.interfaces;
 using EnergyBoard.Domain.entities;
 using EnergyBoard.Domain.interfaces;
 
 namespace EnergyBoard.Application.services;
 
-public class CardService(ICardRepository cardRepository, IMapper mapper)
+public class CardService(ICardRepository cardRepository, IColumnRepository columnRepository, IMapper mapper) : ICardService
 {
     private readonly ICardRepository _cardRepository = cardRepository;
+    private readonly IColumnRepository _columnRepository = columnRepository;
     private readonly IMapper _mapper = mapper;
 
-    public async Task AddCardAsync(CreateCardRequest createCardRequest)
+    public async Task<int> AddAsync(int projectId, int columnId, CreateCardRequest request, Guid userId)
     {
-        var nextPosition = await _cardRepository.GetNextPositionAsync();
+        var nextPosition = await _cardRepository.GetNextPositionAsync(projectId, columnId, userId);
 
-        var card = _mapper.Map<Card>(createCardRequest);
-
+        var card = _mapper.Map<Card>(request);
+        card.ColumnId = columnId;
         card.Position = nextPosition;
         card.CreatedAt = DateTime.UtcNow;
 
         await _cardRepository.AddAsync(card);
+
+        return card.Id;
     }
 
-    public async Task<CardResponse?> GetCardByIdAsync(int id)
+    public async Task<IEnumerable<CardResponse>> GetAllAsync(int projectId, int columnId, Guid userId)
     {
-        var card = await GetExistingCard(id);
-
-        var cardResponse = _mapper.Map<CardResponse>(card);
-
-        return cardResponse;
+        var cards = await _cardRepository.GetAllAsync(projectId, columnId, userId);
+        return _mapper.Map<IEnumerable<CardResponse>>(cards);
     }
 
-    public async Task UpdateCardAsync(int id, UpdateCardRequest updateCard)
+    public async Task<CardResponse> GetByIdAsync(int projectId, int columnId, int cardId, Guid userId)
     {
-        var card = await GetExistingCard(id);
+        var card = await _cardRepository.GetByIdAsync(projectId, columnId, cardId, userId)
+            ?? throw new KeyNotFoundException("Card not found");
 
-        if (updateCard.Title != null)
-        {
-            card.Title = updateCard.Title;
-        }
-        if (updateCard.Description != null)
-        {
-            card.Description = updateCard.Description;
-        }
-        if(updateCard.Deadline != null)
-        {
-            card.Deadline = (DateTime)updateCard.Deadline;
-        }
+        return _mapper.Map<CardResponse>(card);
+    }
+
+    public async Task UpdateAsync(int projectId, int columnId, int cardId, UpdateCardRequest updateCard, Guid userId)
+    {
+        var card = await GetEntityAsync(projectId, columnId, cardId, userId);
+
+        card.Title = updateCard.Title ?? card.Title;
+        card.Description = updateCard.Description ?? card.Description;
+        card.Deadline = updateCard.Deadline ?? card.Deadline;
         card.UpdatedAt = DateTime.UtcNow;
 
         await _cardRepository.UpdateAsync(card);
     }
 
-    public async Task<IEnumerable<CardResponse>> GetAllCardsAsync()
+    public async Task DeleteAsync(int projectId, int columnId, int cardId, Guid userId)
     {
-        var cards = await _cardRepository.GetAllAsync();
-        var cardResponses = cards.Select(card => _mapper.Map<CardResponse>(card));
-
-        return cardResponses;
+        var card = await GetEntityAsync(projectId, columnId, cardId, userId);
+        card.IsDeleted = true;
+        card.UpdatedAt = DateTime.UtcNow;
+        await _cardRepository.UpdateAsync(card);
     }
 
-    public async Task DeleteCardAsync(int id)
+    public async Task UpdatePositionAsync(int projectId, int columnId, int cardId, MoveCardRequest request, Guid userId)
     {
-        var card = await GetExistingCard(id);
+        var card = await GetEntityAsync(projectId, columnId, cardId, userId);
 
-        await _cardRepository.DeleteAsync(card);
+        var targetColumnId = request.NewColumnId ?? card.ColumnId;
+
+        if (!await _columnRepository.ExistsAsync(targetColumnId, projectId, userId))
+            throw new KeyNotFoundException("Target column not found");
+
+        // mover dentro de la misma columna
+        if (card.ColumnId == targetColumnId)
+        {
+            var cards = (await _cardRepository.GetAllAsync(projectId, card.ColumnId, userId)).ToList();
+            ReorderList(cards, cardId, request.NewPosition);
+            await _cardRepository.UpdateRangeAsync(cards);
+            return;
+        }
+
+        // mover a otra columna
+        var originCards = (await _cardRepository.GetAllAsync(projectId, card.ColumnId, userId)).ToList();
+        originCards.RemoveAll(c => c.Id == cardId);
+        RecalculatePositions(originCards);
+        await _cardRepository.UpdateRangeAsync(originCards);
+
+        var targetCards = (await _cardRepository.GetAllAsync(projectId, targetColumnId, userId)).ToList();
+        card.ColumnId = targetColumnId;
+        ReorderList(targetCards, card, request.NewPosition);
+        await _cardRepository.UpdateRangeAsync(targetCards);
     }
 
-    public async Task UpdateCardPositionAsync(int id, MoveCardRequest request)
+    private void ReorderList(List<Card> cards, int cardId, int newPosition)
     {
-        var cards = (await _cardRepository.GetCardsByColumnIdAsync(request.OriginalColumnId)).ToList();
+        var card = cards.First(c => c.Id == cardId);
+        ReorderList(cards, card, newPosition);
+    }
 
-        var cardToMove = cards.FirstOrDefault(c => c.Id == id)
-            ?? throw new KeyNotFoundException("Card not found");
+    private void ReorderList(List<Card> cards, Card card, int newPosition)
+    {
+        cards.Remove(card);
 
-        cards.Remove(cardToMove);
+        if (newPosition < 0) newPosition = 0;
+        if (newPosition > cards.Count) newPosition = cards.Count;
 
-        int newIndex = request.NewPosition;
-        if (newIndex < 0) newIndex = 0;
-        if (newIndex > cards.Count) newIndex = cards.Count;
+        cards.Insert(newPosition, card);
+        RecalculatePositions(cards);
+    }
 
-        cards.Insert(newIndex, cardToMove);
-
+    private void RecalculatePositions(List<Card> cards)
+    {
         for (int i = 0; i < cards.Count; i++)
-        {
             cards[i].Position = i + 1;
-        }
-
-        await _cardRepository.UpdateRangeAsync(cards);
-
-        if (request.NewColumnId != null && request.NewColumnId != request.OriginalColumnId)
-        {
-            cardToMove.ColumnId = (int)request.NewColumnId;
-
-            var newColumnCards = (await _cardRepository.GetCardsByColumnIdAsync((int)request.NewColumnId)).ToList();
-            newColumnCards.Add(cardToMove);
-
-            for (int i = 0; i < newColumnCards.Count; i++)
-            {
-                newColumnCards[i].Position = i + 1;
-            }
-
-            await _cardRepository.UpdateRangeAsync(newColumnCards);
-        }
     }
 
-    private async Task<Card> GetExistingCard(int id)
+    private async Task<Card> GetEntityAsync(int projectId, int columnId, int cardId, Guid userId)
     {
-        return await _cardRepository.GetByIdAsync(id)
+        return await _cardRepository.GetByIdAsync(projectId, columnId, cardId, userId)
             ?? throw new KeyNotFoundException("Card not found");
     }
 }

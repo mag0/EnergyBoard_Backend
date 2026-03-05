@@ -1,7 +1,11 @@
 ﻿using AutoMapper;
 using EnergyBoard.Domain.entities;
-using EnergyBoard.Application.DTOs.response;
-using EnergyBoard.Application.DTOs.request;
+using EnergyBoard.Application.DTOs.response.columns;
+using EnergyBoard.Application.DTOs.response.projects;
+using EnergyBoard.Application.DTOs.response.cards;
+using EnergyBoard.Application.DTOs.request.projects;
+using EnergyBoard.Application.DTOs.request.columns;
+using EnergyBoard.Application.DTOs.request.cards;
 
 namespace EnergyBoard.Application.Mapping
 {
@@ -9,16 +13,16 @@ namespace EnergyBoard.Application.Mapping
     {
         public MappingProfile()
         {
+            // Entidad → Response
             CreateMap<Project, ProjectResponse>();
             CreateMap<Column, ColumnResponse>();
             CreateMap<Card, CardResponse>();
+            CreateMap<Project, CompleteProjectResponse>();
+
+            // Request → Entidad
             CreateMap<CreateProjectRequest, Project>();
             CreateMap<CreateColumnRequest, Column>();
             CreateMap<CreateCardRequest, Card>();
-            CreateMap<UpdateProjectRequest, Project>();
-            CreateMap<UpdateColumnRequest, Column>();
-            CreateMap<UpdateCardRequest, CardResponse>();
-            CreateMap<Project, CompleteProjectResponse>();
         }
     }
 }
