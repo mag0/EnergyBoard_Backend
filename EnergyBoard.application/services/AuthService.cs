@@ -38,4 +38,9 @@ public class AuthService(IUserRepository userRepository, IJwtTokenGenerator jwtG
 
         await _userRepository.AddAsync(user);
     }
+
+    public Task LogoutAsync()
+    {
+        return Task.CompletedTask;
+    }
 }

@@ -16,6 +16,7 @@ namespace EnergyBoard.Application.Mapping
             // Entidad → Response
             CreateMap<Project, ProjectResponse>();
             CreateMap<Column, ColumnResponse>();
+            CreateMap<Column, ColumnWithCardsResponse>();
             CreateMap<Card, CardResponse>();
             CreateMap<Project, CompleteProjectResponse>();
 

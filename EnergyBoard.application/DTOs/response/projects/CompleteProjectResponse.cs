@@ -9,5 +9,5 @@ public class CompleteProjectResponse
     public string Description { get; set; } = string.Empty;
     public int Position { get; set; }
     public DateTime CreatedAt { get; set; }
-    public List<ColumnResponse> Columns { get; set; } = [];
+    public List<ColumnWithCardsResponse> Columns { get; set; } = [];
 }

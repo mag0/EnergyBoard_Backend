@@ -20,7 +20,6 @@ public class CardRepository(AppDbContext context) : ICardRepository
     {
         return await _context.Cards
             .AsNoTracking()
-            .Include(c => c.Column)
             .Where(c =>
                 c.ColumnId == columnId &&
                 c.Column.ProjectId == projectId && 
@@ -61,7 +60,7 @@ public class CardRepository(AppDbContext context) : ICardRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateRangeAsync(IEnumerable<Card> cards)
+    public async Task UpdateRangeAsync(List<Card> cards)
     {
         _context.Cards.UpdateRange(cards);
         await _context.SaveChangesAsync();

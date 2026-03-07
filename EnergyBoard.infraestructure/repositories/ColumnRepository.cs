@@ -15,7 +15,7 @@ public class ColumnRepository (AppDbContext context) : IColumnRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<bool> ExistsAsync(int columnId, int projectId, Guid userId)
+    public async Task<bool> ExistsAsync(int projectId, int columnId,  Guid userId)
     {
         return await _context.Columns
             .AnyAsync(c =>
@@ -65,7 +65,7 @@ public class ColumnRepository (AppDbContext context) : IColumnRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateRangeAsync(IEnumerable<Column> columns)
+    public async Task UpdateRangeAsync(List<Column> columns)
     {
         _context.Columns.UpdateRange(columns);
         await _context.SaveChangesAsync();

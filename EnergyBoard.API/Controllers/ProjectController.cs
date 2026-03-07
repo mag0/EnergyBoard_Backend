@@ -17,56 +17,58 @@ public class ProjectController(IProjectService projectService) : ControllerBase
         => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
-    public async Task<IActionResult> GetAllProjects()
+    public async Task<IActionResult> GetAll()
     {
-        return Ok(await _projectService.GetAllProjectsAsync(GetUserId()));
+        return Ok(await _projectService.GetAllAsync(GetUserId()));
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetProjectById(int id, [FromQuery] bool includeDetails = false)
+    public async Task<IActionResult> GetById(int id, [FromQuery] bool includeDetails = false)
     {
         if (includeDetails)
-            return Ok(await _projectService.GetProjectCompleteAsync(id, GetUserId()));
+            return Ok(await _projectService.GetCompleteAsync(id, GetUserId()));
 
-        return Ok(await _projectService.GetProjectByIdAsync(id, GetUserId()));
+        return Ok(await _projectService.GetByIdAsync(id, GetUserId()));
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateProjectRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var createdId = await _projectService.AddProjectAsync(request, GetUserId());
+        var createdId = await _projectService.AddAsync(request, GetUserId());
 
-        return CreatedAtAction(nameof(GetProjectById), new { id = createdId }, null);
+        return CreatedAtAction(nameof(GetById), 
+            new { id = createdId }, null);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectRequest request)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateProjectRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await _projectService.UpdateProjectAsync(id, request, GetUserId());
+        await _projectService.UpdateAsync(id, request, GetUserId());
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProject(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        await _projectService.DeleteProjectAsync(id, GetUserId());
+        await _projectService.DeleteAsync(id, GetUserId());
+
         return NoContent();
     }
 
     [HttpPatch("{id}/position")]
-    public async Task<IActionResult> UpdateProjectPosition(int id, [FromBody] MoveProjectRequest request)
+    public async Task<IActionResult> UpdatePosition(int id, [FromBody] int newPosition)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await _projectService.UpdateProjectPositionAsync(id, request, GetUserId());
+        await _projectService.UpdatePositionAsync(id, newPosition, GetUserId());
 
         return NoContent();
     }

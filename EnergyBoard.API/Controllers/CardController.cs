@@ -43,7 +43,7 @@ public class CardController(ICardService cardService) : ControllerBase
         var createdId = await _cardService.AddAsync(projectId, columnId, request, userId);
 
         return CreatedAtAction(nameof(GetById),
-            new { columnId, cardId = createdId },
+            new { projectId, columnId, cardId = createdId },
             null);
     }
 

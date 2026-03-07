@@ -11,5 +11,5 @@ public interface IColumnService
     Task<ColumnResponse> GetByIdAsync(int projectId, int columnId, Guid userId);
     Task UpdateAsync(int projectId, int columnId, UpdateColumnRequest request, Guid userId);
     Task DeleteAsync(int projectId, int columnId, Guid userId);
-    Task UpdatePositionAsync(int projectId, int columnId, MoveColumnRequest request, Guid userId);
+    Task UpdatePositionAsync(int projectId, int columnId, int newPosition, Guid userId);
 }

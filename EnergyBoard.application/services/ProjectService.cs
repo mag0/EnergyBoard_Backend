@@ -4,6 +4,7 @@ using EnergyBoard.Application.DTOs.response.projects;
 using EnergyBoard.Application.interfaces;
 using EnergyBoard.Domain.entities;
 using EnergyBoard.Domain.interfaces;
+using System.Data.Common;
 
 namespace EnergyBoard.Application.services;
 public class ProjectService(IProjectRepository projectRepository, IMapper mapper) : IProjectService
@@ -11,13 +12,9 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
     private readonly IProjectRepository _projectRepository = projectRepository;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<int> AddProjectAsync(CreateProjectRequest request, Guid userId)
+    public async Task<int> AddAsync(CreateProjectRequest request, Guid userId)
     {
-        var projects = await _projectRepository.GetAllAsync(userId);
-
-        var nextPosition = projects.Any()
-            ? projects.Max(p => p.Position) + 1
-            : 1;
+        var nextPosition = await _projectRepository.GetNextPositionAsync(userId);
 
         var project = _mapper.Map<Project>(request);
 
@@ -30,44 +27,50 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
         return project.Id;
     }
 
-    public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync(Guid userId)
+    public async Task<IEnumerable<ProjectResponse>> GetAllAsync(Guid userId)
     {
         var projects = await _projectRepository.GetAllAsync(userId);
-        return projects.Select(p => _mapper.Map<ProjectResponse>(p));
+        return _mapper.Map<IEnumerable<ProjectResponse>>(projects);
     }
 
-    public async Task<ProjectResponse?> GetProjectByIdAsync(int id, Guid userId)
+    public async Task<ProjectResponse> GetByIdAsync(int projectId, Guid userId)
     {
-        var project = await GetExistingProject(id, userId);
+        var project = await _projectRepository.GetByIdAsync(projectId, userId)
+            ?? throw new KeyNotFoundException("Project not found");
         return _mapper.Map<ProjectResponse>(project);
     }
 
-    public async Task<CompleteProjectResponse?> GetProjectCompleteAsync(int id, Guid userId)
+    public async Task<CompleteProjectResponse> GetCompleteAsync(int projectId, Guid userId)
     {
-        var project = await _projectRepository.GetCompleteProjectAsync(id, userId)
+        var project = await _projectRepository.GetCompleteProjectAsync(projectId, userId)
             ?? throw new KeyNotFoundException("Project not found");
+
+        project.Columns = project.Columns
+            .OrderBy(c => c.Position)
+            .ToList();
+
+        foreach (var column in project.Columns)
+            column.Cards = column.Cards
+                .OrderBy(card => card.Position)
+                .ToList();
 
         return _mapper.Map<CompleteProjectResponse>(project);
     }
 
-    public async Task UpdateProjectAsync(int id, UpdateProjectRequest request, Guid userId)
+    public async Task UpdateAsync(int projectId, UpdateProjectRequest request, Guid userId)
     {
-        var project = await GetExistingProject(id, userId);
+        var project = await GetEntityAsync(projectId, userId);
 
-        if (request.Title != null)
-            project.Title = request.Title;
-
-        if (request.Description != null)
-            project.Description = request.Description;
-
+        project.Title = request.Title ?? project.Title;
+        project.Description = request.Description ?? project.Description;
         project.UpdatedAt = DateTime.UtcNow;
 
         await _projectRepository.UpdateAsync(project);
     }
 
-    public async Task DeleteProjectAsync(int id, Guid userId)
+    public async Task DeleteAsync(int projectId, Guid userId)
     {
-        var project = await GetExistingProject(id, userId);
+        var project = await GetEntityAsync(projectId, userId);
 
         project.IsDeleted = true;
         project.UpdatedAt = DateTime.UtcNow;
@@ -75,23 +78,16 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
         await _projectRepository.UpdateAsync(project);
     }
 
-    public async Task UpdateProjectPositionAsync(int id, MoveProjectRequest request, Guid userId)
+    public async Task UpdatePositionAsync(int projectId, int newPosition, Guid userId)
     {
-        var projects = (await _projectRepository.GetAllAsync(userId)).ToList();
+        var projects = await _projectRepository.GetAllAsync(userId);
 
-        var projectToMove = projects.FirstOrDefault(p => p.Id == id)
+        var projectToMove = projects.FirstOrDefault(p => p.Id == projectId)
             ?? throw new KeyNotFoundException("Project not found");
 
         projects.Remove(projectToMove);
 
-        var newIndex = request.NewPosition;
-
-        if (newIndex < 0)
-            newIndex = 0;
-
-        if (newIndex > projects.Count)
-            newIndex = projects.Count;
-
+        var newIndex = Math.Clamp(newPosition - 1, 0, projects.Count);
         projects.Insert(newIndex, projectToMove);
 
         for (int i = 0; i < projects.Count; i++)
@@ -100,9 +96,9 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
         await _projectRepository.UpdateRangeAsync(projects);
     }
 
-    private async Task<Project> GetExistingProject(int id, Guid userId)
+    private async Task<Project> GetEntityAsync(int projectId, Guid userId)
     {
-        return await _projectRepository.GetByIdAsync(id, userId)
+        return await _projectRepository.GetByIdAsync(projectId, userId)
             ?? throw new KeyNotFoundException("Project not found");
     }
 }

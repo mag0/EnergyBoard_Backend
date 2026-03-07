@@ -1,5 +1,14 @@
+# .NET
 bin/
 obj/
+.vs/
 *.user
-*.vs/
-appsettings.Development.json
+*.suo
+*.DS_Store
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/

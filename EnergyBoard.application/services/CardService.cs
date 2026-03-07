@@ -16,6 +16,8 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
 
     public async Task<int> AddAsync(int projectId, int columnId, CreateCardRequest request, Guid userId)
     {
+        await ValidateColumnAsync(projectId, columnId, userId);
+
         var nextPosition = await _cardRepository.GetNextPositionAsync(projectId, columnId, userId);
 
         var card = _mapper.Map<Card>(request);
@@ -30,12 +32,16 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
 
     public async Task<IEnumerable<CardResponse>> GetAllAsync(int projectId, int columnId, Guid userId)
     {
+        await ValidateColumnAsync(projectId, columnId, userId);
+
         var cards = await _cardRepository.GetAllAsync(projectId, columnId, userId);
         return _mapper.Map<IEnumerable<CardResponse>>(cards);
     }
 
     public async Task<CardResponse> GetByIdAsync(int projectId, int columnId, int cardId, Guid userId)
     {
+        await ValidateColumnAsync(projectId, columnId, userId);
+
         var card = await _cardRepository.GetByIdAsync(projectId, columnId, cardId, userId)
             ?? throw new KeyNotFoundException("Card not found");
 
@@ -44,6 +50,8 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
 
     public async Task UpdateAsync(int projectId, int columnId, int cardId, UpdateCardRequest updateCard, Guid userId)
     {
+        await ValidateColumnAsync(projectId, columnId, userId);
+
         var card = await GetEntityAsync(projectId, columnId, cardId, userId);
 
         card.Title = updateCard.Title ?? card.Title;
@@ -56,6 +64,8 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
 
     public async Task DeleteAsync(int projectId, int columnId, int cardId, Guid userId)
     {
+        await ValidateColumnAsync(projectId, columnId, userId);
+
         var card = await GetEntityAsync(projectId, columnId, cardId, userId);
         card.IsDeleted = true;
         card.UpdatedAt = DateTime.UtcNow;
@@ -64,52 +74,54 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
 
     public async Task UpdatePositionAsync(int projectId, int columnId, int cardId, MoveCardRequest request, Guid userId)
     {
-        var card = await GetEntityAsync(projectId, columnId, cardId, userId);
+        await ValidateColumnAsync(projectId, columnId, userId);
 
-        var targetColumnId = request.NewColumnId ?? card.ColumnId;
+        await (request.NewColumnId == null
+            ? MoveWithinColumnAsync(projectId, columnId, cardId, request.NewPosition, userId)
+            : MoveToAnotherColumnAsync(projectId, columnId, cardId, request.NewColumnId.Value, request.NewPosition, userId));
+    }
 
-        if (!await _columnRepository.ExistsAsync(targetColumnId, projectId, userId))
-            throw new KeyNotFoundException("Target column not found");
+    private async Task MoveWithinColumnAsync(int projectId, int columnId, int cardId, int newPosition, Guid userId)
+    {
+        var cards = await _cardRepository.GetAllAsync(projectId, columnId, userId);
 
-        // mover dentro de la misma columna
-        if (card.ColumnId == targetColumnId)
-        {
-            var cards = (await _cardRepository.GetAllAsync(projectId, card.ColumnId, userId)).ToList();
-            ReorderList(cards, cardId, request.NewPosition);
-            await _cardRepository.UpdateRangeAsync(cards);
-            return;
-        }
+        var cardToMove = cards.FirstOrDefault(c => c.Id == cardId)
+            ?? throw new KeyNotFoundException("Card not found");
 
-        // mover a otra columna
-        var originCards = (await _cardRepository.GetAllAsync(projectId, card.ColumnId, userId)).ToList();
-        originCards.RemoveAll(c => c.Id == cardId);
-        RecalculatePositions(originCards);
-        await _cardRepository.UpdateRangeAsync(originCards);
+        cards.Remove(cardToMove);
 
-        var targetCards = (await _cardRepository.GetAllAsync(projectId, targetColumnId, userId)).ToList();
-        card.ColumnId = targetColumnId;
-        ReorderList(targetCards, card, request.NewPosition);
+        var newIndex = Math.Clamp(newPosition - 1, 0, cards.Count);
+        cards.Insert(newIndex, cardToMove);
+
+        Reassign(cards);
+
+        await _cardRepository.UpdateRangeAsync(cards);
+    }
+
+    private async Task MoveToAnotherColumnAsync(int projectId, int sourceColumnId, int cardId, int targetColumnId, int newPosition, Guid userId)
+    {
+        var sourceCards = await _cardRepository.GetAllAsync(projectId, sourceColumnId, userId);
+
+        var cardToMove = sourceCards.FirstOrDefault(c => c.Id == cardId)
+            ?? throw new KeyNotFoundException("Card not found");
+
+        sourceCards.Remove(cardToMove);
+
+        var targetCards = await _cardRepository.GetAllAsync(projectId, targetColumnId, userId);
+
+        var newIndex = Math.Clamp(newPosition - 1, 0, targetCards.Count);
+        targetCards.Insert(newIndex, cardToMove);
+
+        Reassign(sourceCards);
+        Reassign(targetCards);
+
+        cardToMove.ColumnId = targetColumnId;
+
+        await _cardRepository.UpdateRangeAsync(sourceCards);
         await _cardRepository.UpdateRangeAsync(targetCards);
     }
 
-    private void ReorderList(List<Card> cards, int cardId, int newPosition)
-    {
-        var card = cards.First(c => c.Id == cardId);
-        ReorderList(cards, card, newPosition);
-    }
-
-    private void ReorderList(List<Card> cards, Card card, int newPosition)
-    {
-        cards.Remove(card);
-
-        if (newPosition < 0) newPosition = 0;
-        if (newPosition > cards.Count) newPosition = cards.Count;
-
-        cards.Insert(newPosition, card);
-        RecalculatePositions(cards);
-    }
-
-    private void RecalculatePositions(List<Card> cards)
+    private static void Reassign(List<Card> cards)
     {
         for (int i = 0; i < cards.Count; i++)
             cards[i].Position = i + 1;
@@ -119,5 +131,11 @@ public class CardService(ICardRepository cardRepository, IColumnRepository colum
     {
         return await _cardRepository.GetByIdAsync(projectId, columnId, cardId, userId)
             ?? throw new KeyNotFoundException("Card not found");
+    }
+
+    private async Task ValidateColumnAsync(int projectId, int columnId, Guid userId)
+    {
+        if (!await _columnRepository.ExistsAsync(projectId, columnId, userId))
+            throw new KeyNotFoundException("Column not found");
     }
 }

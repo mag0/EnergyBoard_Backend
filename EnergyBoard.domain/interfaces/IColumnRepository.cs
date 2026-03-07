@@ -9,7 +9,7 @@ public interface IColumnRepository
     Task<List<Column>> GetAllAsync(int projectId, Guid userId);
     Task AddAsync(Column column);
     Task UpdateAsync(Column column);
-    Task UpdateRangeAsync(IEnumerable<Column> columns);
+    Task UpdateRangeAsync(List<Column> columns);
     Task<int> GetNextPositionAsync(int projectId, Guid userId);
-    Task<bool> ExistsAsync(int columnId, int projectId, Guid userId);
+    Task<bool> ExistsAsync(int projectId, int columnId,  Guid userId);
 }

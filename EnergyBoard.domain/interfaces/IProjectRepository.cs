@@ -5,10 +5,12 @@ namespace EnergyBoard.Domain.interfaces;
 
 public interface IProjectRepository
 {
-    Task<Project?> GetByIdAsync(int id, Guid userId);
-    Task<IEnumerable<Project>> GetAllAsync(Guid userId);
+    Task<Project?> GetByIdAsync(int projectId, Guid userId);
+    Task<List<Project>> GetAllAsync(Guid userId);
     Task AddAsync(Project project);
     Task UpdateAsync(Project project);
-    Task<Project?> GetCompleteProjectAsync(int id, Guid userId);
-    Task UpdateRangeAsync(IEnumerable<Project> projects);
+    Task UpdateRangeAsync(List<Project> projects);
+    Task<Project?> GetCompleteProjectAsync(int projectId, Guid userId);
+    Task<bool> ExistsAsync( int projectId, Guid userId);
+    Task<int> GetNextPositionAsync(Guid userId);
 }

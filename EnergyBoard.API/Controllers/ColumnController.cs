@@ -19,32 +19,24 @@ public class ColumnController(IColumnService columnService) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(int projectId)
     {
-        var userId = GetUserId();
-        var columns = await _columnService.GetAllAsync(projectId, userId);
-        return Ok(columns);
+        return Ok(await _columnService.GetAllAsync(projectId, GetUserId()));
     }
 
     [HttpGet("{columnId:int}")]
     public async Task<IActionResult> GetById(int projectId, int columnId)
     {
-        var userId = GetUserId();
-        var column = await _columnService.GetByIdAsync(projectId, columnId, userId);
-        return Ok(column);
+        return Ok(await _columnService.GetByIdAsync(projectId, columnId, GetUserId()));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
-        int projectId, 
-        [FromBody] CreateColumnRequest request)
+    public async Task<IActionResult> Create(int projectId, [FromBody] CreateColumnRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userId = GetUserId();
+        var createdId = await _columnService.AddAsync(projectId, request, GetUserId());
 
-        var createdId = await _columnService.AddAsync(projectId, request, userId);
-
-        return CreatedAtAction(nameof(GetById),
+        return CreatedAtAction(nameof(GetById), 
             new { projectId, columnId = createdId },
             null);
     }
@@ -58,9 +50,7 @@ public class ColumnController(IColumnService columnService) : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userId = GetUserId();
-
-        await _columnService.UpdateAsync(projectId, columnId, request, userId);
+        await _columnService.UpdateAsync(projectId, columnId, request, GetUserId());
 
         return NoContent();
     }
@@ -68,25 +58,18 @@ public class ColumnController(IColumnService columnService) : ControllerBase
     [HttpDelete("{columnId:int}")]
     public async Task<IActionResult> Delete(int projectId, int columnId)
     {
-        var userId = GetUserId();
-
-        await _columnService.DeleteAsync(projectId, columnId, userId);
+        await _columnService.DeleteAsync(projectId, columnId, GetUserId());
 
         return NoContent();
     }
 
     [HttpPatch("{columnId:int}/position")]
-    public async Task<IActionResult> UpdatePosition(
-        int projectId,
-        int columnId,
-        [FromBody] MoveColumnRequest request)
+    public async Task<IActionResult> UpdatePosition(int projectId, int columnId,[FromBody] int newPosition)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userId = GetUserId();
-
-        await _columnService.UpdatePositionAsync(projectId, columnId, request, userId);
+        await _columnService.UpdatePositionAsync(projectId, columnId, newPosition, GetUserId());
 
         return NoContent();
     }

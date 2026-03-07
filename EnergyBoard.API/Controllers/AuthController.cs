@@ -26,4 +26,12 @@ public class AuthController(IAuthService authService) : ControllerBase
         var token = await _authService.LoginAsync(request);
         return Ok(new { token });
     }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await _authService.LogoutAsync();
+        return Ok(new { message = "Logged out successfully" });
+    }
 }
