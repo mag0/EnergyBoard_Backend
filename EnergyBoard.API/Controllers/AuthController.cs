@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EnergyBoard.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
     private readonly IAuthService _authService = authService;

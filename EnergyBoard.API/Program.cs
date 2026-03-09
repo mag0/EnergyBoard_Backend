@@ -14,7 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
-Env.Load(); // Carga las variables desde el .env
+Env.Load(); // Carga variables desde .env
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,12 +26,15 @@ var dbName = Env.GetString("DB_NAME");
 var dbUser = Env.GetString("DB_USER");
 var dbPassword = Env.GetString("DB_PASSWORD");
 
+var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "http://localhost:5173";
+
 var connectionString =
     $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
 var jwtKey = Env.GetString("JWT_KEY");
 var jwtIssuer = Env.GetString("JWT_ISSUER", "EnergyBoard");
 var jwtAudience = Env.GetString("JWT_AUDIENCE", "EnergyBoardUsers");
+
 #endregion
 
 #region Controllers
@@ -52,7 +55,6 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // Soporte para JWT en Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header usando el esquema Bearer. Ejemplo: 'Bearer {token}'",
@@ -74,7 +76,7 @@ builder.Services.AddSwaggerGen(options =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 });
@@ -117,6 +119,22 @@ builder.Services.AddAuthorization();
 
 #endregion
 
+#region CORS
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy
+            .WithOrigins(frontendUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+#endregion
+
 #region AutoMapper
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -140,19 +158,29 @@ builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+#endregion
+
+#region Seeders
+
 builder.Services.AddScoped<DatabaseSeeder>();
 
 #endregion
 
 var app = builder.Build();
 
-#region Middleware pipeline
+#region Seeder (solo en development)
 
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
     await seeder.SeedAsync();
 }
+
+#endregion
+
+#region Middleware pipeline
 
 if (app.Environment.IsDevelopment())
 {
@@ -161,6 +189,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendPolicy");
 
 app.UseMiddleware<ExceptionMiddleware>();
 

@@ -7,9 +7,16 @@ using EnergyBoard.Domain.interfaces;
 using System.Data.Common;
 
 namespace EnergyBoard.Application.services;
-public class ProjectService(IProjectRepository projectRepository, IMapper mapper) : IProjectService
+public class ProjectService(
+    IProjectRepository projectRepository,
+    IColumnRepository columnRepository,
+    ICardRepository cardRepository,
+    IMapper mapper
+    ) : IProjectService
 {
     private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly IColumnRepository _columnRepository = columnRepository;
+    private readonly ICardRepository _cardRepository = cardRepository;
     private readonly IMapper _mapper = mapper;
 
     public async Task<int> AddAsync(CreateProjectRequest request, Guid userId)
@@ -30,13 +37,22 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
     public async Task<IEnumerable<ProjectResponse>> GetAllAsync(Guid userId)
     {
         var projects = await _projectRepository.GetAllAsync(userId);
-        return _mapper.Map<IEnumerable<ProjectResponse>>(projects);
+
+        var responses = _mapper.Map<List<ProjectResponse>>(projects);
+
+        foreach (var project in responses)
+        {
+            project.Progress = await _projectRepository.GetProjectProgressAsync(project.Id);
+        }
+
+        return responses;
     }
 
     public async Task<ProjectResponse> GetByIdAsync(int projectId, Guid userId)
     {
         var project = await _projectRepository.GetByIdAsync(projectId, userId)
             ?? throw new KeyNotFoundException("Project not found");
+
         return _mapper.Map<ProjectResponse>(project);
     }
 
@@ -59,7 +75,7 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
 
     public async Task UpdateAsync(int projectId, UpdateProjectRequest request, Guid userId)
     {
-        var project = await GetEntityAsync(projectId, userId);
+        var project = await GetProjectEntityAsync(projectId, userId);
 
         project.Title = request.Title ?? project.Title;
         project.Description = request.Description ?? project.Description;
@@ -70,10 +86,20 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
 
     public async Task DeleteAsync(int projectId, Guid userId)
     {
-        var project = await GetEntityAsync(projectId, userId);
+        var project = await GetProjectEntityAsync(projectId, userId);
+        var now = DateTime.UtcNow;
 
-        project.IsDeleted = true;
-        project.UpdatedAt = DateTime.UtcNow;
+        var columns = await _columnRepository.GetAllAsync(projectId, userId);
+        var cards = await _cardRepository.GetAllByProjectAsync(projectId, userId);
+
+        MarkCardsAsDeleted(cards, now);
+        MarkColumnsAsDeleted(columns, now);
+        MarkProjectAsDeleted(project, now);
+
+        if (cards.Count != 0)
+            await _cardRepository.UpdateRangeAsync(cards);
+        if (cards.Count != 0)
+            await _columnRepository.UpdateRangeAsync(columns);
 
         await _projectRepository.UpdateAsync(project);
     }
@@ -96,9 +122,31 @@ public class ProjectService(IProjectRepository projectRepository, IMapper mapper
         await _projectRepository.UpdateRangeAsync(projects);
     }
 
-    private async Task<Project> GetEntityAsync(int projectId, Guid userId)
+    private async Task<Project> GetProjectEntityAsync(int projectId, Guid userId)
     {
         return await _projectRepository.GetByIdAsync(projectId, userId)
             ?? throw new KeyNotFoundException("Project not found");
+    }
+
+    private static void MarkCardsAsDeleted(List<Card> cards, DateTime now)
+    {
+        foreach (var card in cards)
+        {
+            card.IsDeleted = true;
+            card.UpdatedAt = now;
+        }
+    }
+    private static void MarkColumnsAsDeleted(List<Column> columns, DateTime now)
+    {
+        foreach (var column in columns)
+        {
+            column.IsDeleted = true;
+            column.UpdatedAt = now;
+        }
+    }
+    private static void MarkProjectAsDeleted(Project project, DateTime now)
+    {
+        project.IsDeleted = true;
+        project.UpdatedAt = now;
     }
 }

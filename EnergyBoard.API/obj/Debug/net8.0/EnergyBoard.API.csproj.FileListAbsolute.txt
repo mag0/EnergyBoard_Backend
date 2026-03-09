@@ -124,7 +124,6 @@ C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\n
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\EnergyBo.9541C815.Up2Date
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\EnergyBoard.API.dll
 C:\Users\guerr\source\repos\mag0\EnergyBoard_Backend\EnergyBoard.API\obj\Debug\net8.0\refint\EnergyBoard.API.dll

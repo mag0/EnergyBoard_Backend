@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EnergyBoard.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5466790b007bdf79ae2eea46d4f02397d6969db8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+58f7d2c5a6093bf05cd1a3c8ae9260389eaa55cf")]
 [assembly: System.Reflection.AssemblyProductAttribute("EnergyBoard.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EnergyBoard.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -13,4 +13,5 @@ public interface IProjectRepository
     Task<Project?> GetCompleteProjectAsync(int projectId, Guid userId);
     Task<bool> ExistsAsync( int projectId, Guid userId);
     Task<int> GetNextPositionAsync(Guid userId);
+    Task<int> GetProjectProgressAsync(int projectId);
 }

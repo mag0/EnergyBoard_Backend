@@ -6,6 +6,7 @@ using EnergyBoard.Application.DTOs.response.cards;
 using EnergyBoard.Application.DTOs.request.projects;
 using EnergyBoard.Application.DTOs.request.columns;
 using EnergyBoard.Application.DTOs.request.cards;
+using EnergyBoard.Application.DTOs.response.users;
 
 namespace EnergyBoard.Application.Mapping
 {
@@ -19,11 +20,13 @@ namespace EnergyBoard.Application.Mapping
             CreateMap<Column, ColumnWithCardsResponse>();
             CreateMap<Card, CardResponse>();
             CreateMap<Project, CompleteProjectResponse>();
+            CreateMap<User, UserResponse>();
 
             // Request → Entidad
             CreateMap<CreateProjectRequest, Project>();
             CreateMap<CreateColumnRequest, Column>();
             CreateMap<CreateCardRequest, Card>();
+
         }
     }
 }

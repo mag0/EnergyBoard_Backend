@@ -8,10 +8,16 @@ using EnergyBoard.Domain.interfaces;
 
 namespace EnergyBoard.Application.services;
 
-public class ColumnService (IColumnRepository columnRepository, IProjectRepository projectRepository, IMapper mapper) : IColumnService
+public class ColumnService (
+    IColumnRepository columnRepository, 
+    IProjectRepository projectRepository,
+    ICardRepository cardRepository,
+    IMapper mapper
+    ) : IColumnService
 {
     private readonly IColumnRepository _columnRepository = columnRepository;
     private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly ICardRepository _cardRepository = cardRepository;
     private readonly IMapper _mapper = mapper;
 
     public async Task<int> AddAsync(int projectId, CreateColumnRequest request, Guid userId)
@@ -66,9 +72,15 @@ public class ColumnService (IColumnRepository columnRepository, IProjectReposito
         await ValidateProjectAsync(projectId, userId);
 
         var column = await GetEntityAsync(projectId, columnId, userId);
+        var cards = await _cardRepository.GetAllAsync(projectId, columnId, userId);
+
+        MarkCardsAsDeleted(cards, DateTime.UtcNow);
 
         column.IsDeleted = true;
         column.UpdatedAt = DateTime.UtcNow;
+
+        if (cards.Count != 0)
+            await _cardRepository.UpdateRangeAsync(cards);
 
         await _columnRepository.UpdateAsync(column);
     }
@@ -105,5 +117,14 @@ public class ColumnService (IColumnRepository columnRepository, IProjectReposito
     {
         if (!await _projectRepository.ExistsAsync(projectId, userId))
             throw new KeyNotFoundException("Project not found");
+    }
+
+    private static void MarkCardsAsDeleted(List<Card> cards, DateTime now)
+    {
+        foreach (var card in cards)
+        {
+            card.IsDeleted = true;
+            card.UpdatedAt = now;
+        }
     }
 }

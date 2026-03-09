@@ -28,6 +28,15 @@ public class CardRepository(AppDbContext context) : ICardRepository
             .ToListAsync();
     }
 
+    public async Task<List<Card>> GetAllByProjectAsync(int projectId, Guid userId)
+    {
+        return await _context.Cards
+            .Where(c =>
+                c.Column.ProjectId == projectId &&
+                c.Column.Project.UserId == userId)
+            .ToListAsync();
+    }
+
     public async Task<Card?> GetByIdAsync(int projectId, int columnId, int cardId, Guid userId)
     {
         return await _context.Cards

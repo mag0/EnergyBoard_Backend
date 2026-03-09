@@ -76,4 +76,28 @@ public class ProjectRepository(AppDbContext context) : IProjectRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task<int> GetProjectProgressAsync(int projectId)
+    {
+        var progress = await _context.Database
+            .SqlQuery<int>($"""
+        SELECT COALESCE(
+            CAST(AVG(
+                LEAST(
+                    GREATEST(
+                        (EXTRACT(EPOCH FROM (NOW() - c."CreatedAt")) /
+                         EXTRACT(EPOCH FROM (c."Deadline" - c."CreatedAt"))) * 100,
+                    0),
+                100)
+            ) AS INT),
+        0) AS "Value"
+        FROM "Cards" c
+        JOIN "Columns" col ON col."Id" = c."ColumnId"
+        JOIN "Projects" p ON p."Id" = col."ProjectId"
+        WHERE p."Id" = {projectId}
+        """)
+            .FirstAsync();
+
+        return progress;
+    }
+
 }
