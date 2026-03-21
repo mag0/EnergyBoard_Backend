@@ -1,5 +1,5 @@
-# Etapa 1: build
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+# Etapa de build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY EnergyBoard.API/*.csproj ./EnergyBoard.API/
@@ -13,8 +13,8 @@ COPY . .
 
 RUN dotnet publish EnergyBoard.API/EnergyBoard.API.csproj -c Release -o /app/out
 
-# Etapa 2: runtime
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
+# Etapa runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out .
 
